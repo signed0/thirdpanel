@@ -79,26 +79,35 @@ class ComicFeed(object):
     def _clean_item(self, item):
         return item
 
+def add_description_image(item, has_title=False):        
+    '''Attemps to correct image in the description'''
+
+    raw_images = extract_images(item['description'], has_title=has_title)
+
+    if len(raw_images) == 0:
+        return None
+    first_image = raw_images[0]
+
+    item['image_url'] = first_image['src']
+    item['alt_text'] = first_image['title']
+
+    del item['description']
+
+    return item
+
 class ASofterWorldFeed(ComicFeed):
     '''Uses RSSPECT'''
 
     rss_url = "http://www.rsspect.com/rss/asw.xml"
 
     def _clean_item(self, item):
-        raw_images = extract_images(item['description'], has_title=True)
-
-        if len(raw_images) == 0:
+        item = add_description_image(item, has_title=True)
+        if item is None:
             return None
-        first_image = raw_images[0]
-
-        item['image_url'] = first_image['src']
-        item['alt_text'] = first_image['title']
 
         # add the commic number to the title
         comic_id = item['link'].rsplit('=', 1)[-1]
         item['title'] = "#%s" % comic_id
-
-        del item['description']
 
         return item
 
@@ -108,19 +117,7 @@ class WondermarkFeed(ComicFeed):
     rss_url = "http://feeds.feedburner.com/wondermark"
 
     def _clean_item(self, item):
-        raw_images = extract_images(item['description'], has_title=True)
-
-        if len(raw_images) == 0:
-            return None
-        first_image = raw_images[0]
-
-        item['image_url'] = first_image['src']
-        item['alt_text'] = first_image['title']
-
-        del item['description']
-        del item['content:encoded']
-
-        return item
+        return add_description_image(item, has_title=True)
 
 class DinosaurComicsFeed(ComicFeed):
     '''Uses RSSPECT'''
@@ -143,15 +140,12 @@ class XkcdFeed(ComicFeed):
     rss_url = "http://xkcd.com/rss.xml"
 
     def _clean_item(self, item):
-        raw_images = extract_images(item['description'], has_title=False)
+        return add_description_image(item, has_title=False)
 
-        if len(raw_images) == 0:
-            return None
-        first_image = raw_images[0]
+class DilbertFeed(ComicFeed):
+    '''Uses Feedburner'''
 
-        item['image_url'] = first_image['src']
-        item['alt_text'] = first_image['title']
+    rss_url = "http://feed.dilbert.com/dilbert/daily_strip"
 
-        del item['description']
-
-        return item
+    def _clean_item(self, item):
+        return add_description_image(item, has_title=False)

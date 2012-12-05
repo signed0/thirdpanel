@@ -9,7 +9,8 @@ import feeds
 AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed,
                           'wondermark': feeds.WondermarkFeed,
                           'dinosaurcomics': feeds.DinosaurComicsFeed,
-                          'xkcd': feeds.XkcdFeed
+                          'xkcd': feeds.XkcdFeed,
+                          'dilbert': feeds.DilbertFeed
                           }
 
 ITEM_FIELDS = frozenset(('title', 'link', 'pubDate', 'guid'))
@@ -63,4 +64,3 @@ def feed_rss(feed_name):
     feed_data = fetch_feed_or_404(feed_name) 
     feed_str = render_feed_as_rss(feed_data)
     return Response(feed_str, content_type='application/rss+xml')
-    
