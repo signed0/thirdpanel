@@ -92,9 +92,11 @@ class ASofterWorldFeed(ComicFeed):
         first_image = raw_images[0]
 
         item['image_url'] = first_image['src']
-        item['title'] = first_image['title']
+        item['alt_text'] = first_image['title']
 
         comic_id = item['link'].rsplit('=', 1)[-1]
+
+        # add the commic number to the title
         item['title'] = "%s %s" % (item['title'], comic_id)
 
         del item['description']
@@ -114,7 +116,7 @@ class WondermarkFeed(ComicFeed):
         first_image = raw_images[0]
 
         item['image_url'] = first_image['src']
-        item['title'] = first_image['title']
+        item['alt_text'] = first_image['title']
 
         del item['description']
         del item['content:encoded']
