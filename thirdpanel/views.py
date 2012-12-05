@@ -30,8 +30,11 @@ def render_feed_as_rss(feed):
                 element.set('isPermaLink', 'false')
 
         desc = etree.SubElement(xml_item, 'description')
-        desc.text = '<img src="%s" title="%s" />' % (item['image_url'],
-                                                     item.get('alt_text'))
+
+        img_tag = '<img src="%s" title="%s" alt="%s" />'
+        desc.text =  img_tag % (item['image_url'],
+                                item.get('title'),
+                                item.get('title'))
 
     return etree.tostring(root, 
                           xml_declaration=True, 

@@ -85,12 +85,14 @@ class ASofterWorldFeed(ComicFeed):
     rss_url = "http://www.rsspect.com/rss/asw.xml"
 
     def _clean_item(self, item):
-        images = extract_images(item['description'], has_title=True)
+        raw_images = extract_images(item['description'], has_title=True)
 
-        for image in images:            
-            item['image_url'] = image['src']
-            item['alt_text'] = alt_text
-            break
+        if len(raw_images) == 0:
+            return None
+        first_image = raw_images[0]
+
+        item['image_url'] = first_image['src']
+        item['title'] = first_image['title']
 
         comic_id = item['link'].rsplit('=', 1)[-1]
         item['title'] = "%s %s" % (item['title'], comic_id)
@@ -104,14 +106,13 @@ class WondermarkFeed(ComicFeed):
 
     rss_url = "http://feeds.feedburner.com/wondermark"
 
-
     def _clean_item(self, item):
         raw_images = extract_images(item['description'], has_title=True)
 
         if len(raw_images) == 0:
             return None
-
         first_image = raw_images[0]
+
         item['image_url'] = first_image['src']
         item['title'] = first_image['title']
 
@@ -119,11 +120,3 @@ class WondermarkFeed(ComicFeed):
         del item['content:encoded']
 
         return item
-
-
-if __name__ == '__main__':
-    feed = WondermarkFeed()
-
-    for item in feed.fetch_data()['items']:
-        print item
-
