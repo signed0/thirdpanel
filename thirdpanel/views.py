@@ -47,9 +47,10 @@ def render_feed_as_rss(feed):
 
         desc = etree.SubElement(xml_item, 'description')
 
+        alt_text = item.get('alt_text') or ''
+
         img_tag = '<img src="%s" title="%s" />'
-        desc.text =  img_tag % (item['image_url'],
-                                item.get('alt_text'))
+        desc.text =  img_tag % (item['image_url'], alt_text)
 
     return etree.tostring(root, 
                           xml_declaration=True, 
