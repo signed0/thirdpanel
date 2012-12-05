@@ -6,20 +6,69 @@
         <style>
         body {
             background-color: #e9e9e9;
-        }        
+        }
+        .comic_image {
+            text-align: center;
+        }
+        .comic_header {
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+        #page_header {
+            margin-bottom: 3em;
+        }    
+        .alt_text_row {
+            margin-top: 1em;
+        }
+        .alt_text .text {
+            display: none; 
+        }
+        .alt_text:hover .text {
+             display: block;
+        }
+        .alt_text .placeholder {
+            display: block; 
+            text-align: center;
+        }
+        .alt_text:hover .placeholder {
+             display: none;
+        }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>{{ comic.title }}</h1>
-            <a href="rss.xml">RSS</a> &middot; <a href="feed.json">JSON</a>
-            <br />
-            <br />
-            <hr />
+            <div id="page_header" class="row">
+                <h1>{{ comic.title }}</h1>
+                <a href="rss.xml">RSS</a> &middot; <a href="feed.json">JSON</a>
+            </div>
+
+            <div class="row"><hr /></div>
 
             {% for item in comic['items'] %}
-                <h3><a href="{{ item.link }}">{{ item.title }}</a></h3>
-                <img src="{{ item.image_url }}" title="{{ item.alt_text|e }}">
+                <div class="row comic_header">
+                    <h3><a href="{{ item.link }}">{{ item.title }}</a></h3>
+                </div>
+
+                <div class="row comic_image">
+                    <div class="span12">
+                        <img src="{{ item.image_url }}" title="{{ item.alt_text|e }}">
+                    </div>
+                </div>
+
+                {% if item.alt_text %}                    
+                    <div class="alt_text_row row">
+                        <div class="span8 offset2">
+                            <div class="well  alt_text">
+                                <span class="text">{{ item.alt_text }}</span>
+                                <span class="placeholder muted">Alt Text</span>
+                            </div>                     
+                        </div>   
+                    </div>
+                {% endif %}
+
+
                 <hr />
             {% endfor %}
         </div>
