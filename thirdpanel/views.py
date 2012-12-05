@@ -10,9 +10,17 @@ AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed,
                           'wondermark': feeds.WondermarkFeed 
                           }
 
-EXTENSIONS = ['xml', 'json']
+ITEM_FIELDS = frozenset(('title', 'link', 'pubDate', 'guid'))
 
-item_fields = frozenset(('title', 'link', 'pubDate', 'guid'))
+def fetch_feed_or_404(feed_name):
+    feed_loader_class = AVAILABLE_FEED_LOADERS.get(feed_name)
+
+    if feed_loader_class is None:
+        abort(404)
+
+    feed_loader = feed_loader_class()
+
+    return feed_loader.fetch_data()
 
 def render_feed_as_rss(feed):
     root = etree.Element('rss', version='2.0')
@@ -22,7 +30,7 @@ def render_feed_as_rss(feed):
     for item in feed['items']:
         xml_item = etree.SubElement(channel, 'item')
 
-        item_keys = item_fields & frozenset(item.iterkeys())
+        item_keys = ITEM_FIELDS & frozenset(item.iterkeys())
         for field in item_keys:                
             element = etree.SubElement(xml_item, field)
             element.text = item[field]
@@ -40,20 +48,14 @@ def render_feed_as_rss(feed):
                           xml_declaration=True, 
                           encoding="UTF-8")
 
-@app.route('/<feed_name>/feed.<extension>')
-def index(feed_name, extension):
+@app.route('/<feed_name>/feed.json')
+def feed_json(feed_name):
+    feed_data = fetch_feed_or_404(feed_name)
+    return jsonify(feed_data)
 
-    feed_loader_class = AVAILABLE_FEED_LOADERS.get(feed_name)
-
-    if feed_loader_class is None or extension not in EXTENSIONS:
-        abort(404)
-
-    feed_loader = feed_loader_class()
-
-    feed_data = feed_loader.fetch_data() 
-
-    if extension == 'json':
-        return jsonify(feed_data)
-    elif extension == 'xml':
-        feed_str = render_feed_as_rss(feed_data)
-        return Response(feed_str, mimetype='application/rss+xml')
+@app.route('/<feed_name>/rss.xml')
+def feed_rss(feed_name):
+    feed_data = fetch_feed_or_404(feed_name) 
+    feed_str = render_feed_as_rss(feed_data)
+    return Response(feed_str, mimetype='application/rss+xml')
+    
