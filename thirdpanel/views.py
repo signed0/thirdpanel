@@ -62,5 +62,5 @@ def feed_json(feed_name):
 def feed_rss(feed_name):
     feed_data = fetch_feed_or_404(feed_name) 
     feed_str = render_feed_as_rss(feed_data)
-    return Response(feed_str, mimetype='application/rss+xml')
+    return Response(feed_str, content_type='application/rss+xml')
     
