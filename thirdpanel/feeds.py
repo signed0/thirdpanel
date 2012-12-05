@@ -120,3 +120,19 @@ class WondermarkFeed(ComicFeed):
         del item['content:encoded']
 
         return item
+
+class DinosaurComicsFeed(ComicFeed):
+    '''Uses RSSPECT'''
+
+    rss_url = "http://www.rsspect.com/rss/qwantz.xml"
+
+    def _clean_item(self, item):
+        soup = BeautifulSoup(item['description'])
+        comic = soup.find('img', {'class': 'comic'})
+
+        item['image_url'] = comic['src']
+        item['alt_text'] = comic['title']
+
+        del item['description']
+
+        return item

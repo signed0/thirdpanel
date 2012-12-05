@@ -7,7 +7,8 @@ from app import app
 import feeds
 
 AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed,
-                          'wondermark': feeds.WondermarkFeed 
+                          'wondermark': feeds.WondermarkFeed,
+                          'dinosaurcomics': feeds.DinosaurComicsFeed
                           }
 
 ITEM_FIELDS = frozenset(('title', 'link', 'pubDate', 'guid'))
