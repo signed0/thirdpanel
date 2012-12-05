@@ -3,8 +3,7 @@ import xml.sax
 import cStringIO
 from bs4 import BeautifulSoup
 
-comic = dict(title="A Softer World",
-             rss_url="http://www.rsspect.com/rss/asw.xml")
+comic = dict()
 
 class RssHandler(xml.sax.handler.ContentHandler):
     def __init__(self):
@@ -50,8 +49,24 @@ def parse_rss_feed(feed_content):
 
     return dict(items=handler.items)
 
-def clean_asw_items(items):
-    for item in items:
+class ComicFeed(object):
+
+    rss_url = None
+
+    def fetch_feed(self):
+        r = requests.get(self.rss_url)
+        feed = parse_rss_feed(r.content)
+        feed['items'] = [self._clean_item(i) for i in feed['items']]
+        return feed
+
+    def _clean_item(self, item):
+        return item
+
+class ASofterWorldFeed(ComicFeed):
+
+    rss_url = "http://www.rsspect.com/rss/asw.xml"
+
+    def _clean_item(self, item):
         soup = BeautifulSoup(item['description'])
         for image in soup.findAll('img'): 
             alt_text = image.get('title')       
@@ -65,15 +80,11 @@ def clean_asw_items(items):
 
         del item['description']
 
-def fetch_updates(rss_url):
-    r = requests.get(rss_url)
-
-    feed = parse_rss_feed(r.content)
-    items = feed['items']
-    clean_asw_items(items)
-    for item in items:
-        print item
-
+        return item
 
 if __name__ == '__main__':
-    fetch_updates(comic['rss_url'])
+
+    comic_feed = ASofterWorldFeed().fetch_feed()
+
+    for item in comic_feed['items']:
+        print item
