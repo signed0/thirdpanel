@@ -19,7 +19,7 @@
 
             {% for item in comic['items'] %}
                 <h3><a href="{{ item.link }}">{{ item.title }}</a></h3>
-                <img src="{{ item.image_url }}" title="{{ item.alt_text }}">
+                <img src="{{ item.image_url }}" title="{{ escape(item.alt_text) }}">
                 <hr />
             {% endfor %}
         </div>
