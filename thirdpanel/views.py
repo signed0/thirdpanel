@@ -56,13 +56,19 @@ def render_feed_as_rss(feed):
                           xml_declaration=True, 
                           encoding="UTF-8")
 
-@app.route('/<feed_name>/feed.json')
-def feed_json(feed_name):
-    feed_data = fetch_feed_or_404(feed_name)
+@app.route('/<comic_name>')
+@app.route('/<comic_name>/')
+def comic_home(comic_name):
+    comic_data = fetch_feed_or_404(comic_name)
+    return render_template('comic_index.jinja2', comic=comic_data)
+
+@app.route('/<comic_name>/feed.json')
+def feed_json(comic_name):
+    feed_data = fetch_feed_or_404(comic_name)
     return jsonify(feed_data)
 
-@app.route('/<feed_name>/rss.xml')
-def feed_rss(feed_name):
-    feed_data = fetch_feed_or_404(feed_name) 
+@app.route('/<comic_name>/rss.xml')
+def feed_rss(comic_name):
+    feed_data = fetch_feed_or_404(comic_name) 
     feed_str = render_feed_as_rss(feed_data)
     return Response(feed_str, content_type='application/rss+xml')
