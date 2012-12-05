@@ -94,10 +94,9 @@ class ASofterWorldFeed(ComicFeed):
         item['image_url'] = first_image['src']
         item['alt_text'] = first_image['title']
 
-        comic_id = item['link'].rsplit('=', 1)[-1]
-
         # add the commic number to the title
-        item['title'] = "%s %s" % (item['title'], comic_id)
+        comic_id = item['link'].rsplit('=', 1)[-1]
+        item['title'] = "#%s" % comic_id
 
         del item['description']
 
