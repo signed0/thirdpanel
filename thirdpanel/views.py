@@ -48,9 +48,10 @@ def render_feed_as_rss(feed):
 
         desc = etree.SubElement(xml_item, 'description')
 
+        # the alt_text will include the proper surrounding quotations
         alt_text = item.get('alt_text')
-        if alt_text is None:
-            alt_text = ''
+        if alt_text is None:            
+            alt_text = '""'
         else:
             alt_text = quoteattr(alt_text)
 
