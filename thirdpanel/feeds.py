@@ -1,79 +1,96 @@
 import requests
-import xml.sax
-import cStringIO
+
 from bs4 import BeautifulSoup
 
-comic = dict()
+from rss import parse_rss_feed
 
-class RssHandler(xml.sax.handler.ContentHandler):
-    def __init__(self):
-        self.items = []
+def clean_string(value):
+    '''Returns None instead of empty strings'''
 
-        self._cur_content = None
-        self._cur_item = None
+    if value is None:
+        return None
+    value = value.strip()
+    if len(value) == 0:
+        return None
 
-    def startElement(self, name, attrs):
-        if name == 'item':
-            self._cur_item = dict()
-            self.items.append(self._cur_item)
+    return value
 
-        if self._cur_item is not None:
-            self._cur_content = cStringIO.StringIO()
+def clean_int(value):
+    '''Returns an int or None'''
 
+    if value is None:
+        return None
 
-    def endElement(self, name):
-        content = None
-        if self._cur_content is not None:            
-            content = self._cur_content.getvalue()
-            self._cur_content.close()
+    if value.isdigit():
+        return int(value)
 
-            if len(content) == 0:
-                content = None
+    return None
 
-            if self._cur_item is not None:
-                self._cur_item[name] = content
+def extract_images(html, has_title=True):
+    result = []
 
-        self._cur_content = None
-        if name == 'item':
-            self._cur_item = None
+    soup = BeautifulSoup(html)
+    for image_tag in soup.findAll('img'): 
+        src = clean_string(image_tag.get('src'))
+        if src is None:
+            continue
 
+        title = clean_string(image_tag.get('title'))        
+        if title is None and has_title is True:
+            # filter out images without titles
+            continue
 
-    def characters(self, content):
-        if self._cur_content is not None:
-            self._cur_content.write(content)
+        width = clean_int(image_tag.get('width'))
+        height = clean_int(image_tag.get('height'))        
 
-def parse_rss_feed(feed_content):
+        if width is None or height is None:
+            width = None
+            height = None
 
-    handler = RssHandler()
-    xml.sax.parseString(feed_content, handler=handler)
+        image = dict(src=src,
+                     title=title,
+                     alt=clean_string(image_tag.get('alt')),
+                     width=width,
+                     height=height
+                    )
 
-    return dict(items=handler.items)
+        result.append(image)
+
+    return result
 
 class ComicFeed(object):
 
     rss_url = None
 
-    def fetch_feed(self):
+    def fetch_data(self):
         r = requests.get(self.rss_url)
         feed = parse_rss_feed(r.content)
-        feed['items'] = [self._clean_item(i) for i in feed['items']]
+
+        items = []
+        for item in feed['items']:
+            item = self._clean_item(item)
+            if item is not None:
+                items.append(item)
+
+        feed['items'] = items
+
         return feed
 
     def _clean_item(self, item):
         return item
 
 class ASofterWorldFeed(ComicFeed):
+    '''Uses RSSPECT'''
 
     rss_url = "http://www.rsspect.com/rss/asw.xml"
 
     def _clean_item(self, item):
-        soup = BeautifulSoup(item['description'])
-        for image in soup.findAll('img'): 
-            alt_text = image.get('title')       
-            if alt_text is not None:
-                item['image_url'] = image['src']
-                item['alt_text'] = alt_text
-                break
+        images = extract_images(item['description'], has_title=True)
+
+        for image in images:            
+            item['image_url'] = image['src']
+            item['alt_text'] = alt_text
+            break
 
         comic_id = item['link'].rsplit('=', 1)[-1]
         item['title'] = "%s %s" % (item['title'], comic_id)
@@ -82,9 +99,31 @@ class ASofterWorldFeed(ComicFeed):
 
         return item
 
+class WondermarkFeed(ComicFeed):
+    '''Uses Feedburner'''
+
+    rss_url = "http://feeds.feedburner.com/wondermark"
+
+
+    def _clean_item(self, item):
+        raw_images = extract_images(item['description'], has_title=True)
+
+        if len(raw_images) == 0:
+            return None
+
+        first_image = raw_images[0]
+        item['image_url'] = first_image['src']
+        item['title'] = first_image['title']
+
+        del item['description']
+        del item['content:encoded']
+
+        return item
+
+
 if __name__ == '__main__':
+    feed = WondermarkFeed()
 
-    comic_feed = ASofterWorldFeed().fetch_feed()
-
-    for item in comic_feed['items']:
+    for item in feed.fetch_data()['items']:
         print item
+

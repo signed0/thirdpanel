@@ -6,7 +6,9 @@ from app import app
 
 import feeds
 
-AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed }
+AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed,
+                          'wondermark': feeds.WondermarkFeed 
+                          }
 
 EXTENSIONS = ['xml', 'json']
 
@@ -45,13 +47,10 @@ def index(feed_name, extension):
 
     feed_loader = feed_loader_class()
 
-    feed_data = feed_loader.fetch_feed() 
+    feed_data = feed_loader.fetch_data() 
 
     if extension == 'json':
         return jsonify(feed_data)
     elif extension == 'xml':
         feed_str = render_feed_as_rss(feed_data)
         return Response(feed_str, mimetype='application/rss+xml')
-
-    
-    return 'hello'
