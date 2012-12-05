@@ -138,3 +138,21 @@ class DinosaurComicsFeed(ComicFeed):
         del item['description']
 
         return item
+
+class XkcdFeed(ComicFeed):
+
+    rss_url = "http://xkcd.com/rss.xml"
+
+    def _clean_item(self, item):
+        raw_images = extract_images(item['description'], has_title=False)
+
+        if len(raw_images) == 0:
+            return None
+        first_image = raw_images[0]
+
+        item['image_url'] = first_image['src']
+        item['alt_text'] = first_image['title']
+
+        del item['description']
+
+        return item
