@@ -1,4 +1,5 @@
 from lxml import etree
+from xml.sax.saxutils import quoteattr
 
 from flask import render_template, request, abort, jsonify, Response
 
@@ -47,9 +48,13 @@ def render_feed_as_rss(feed):
 
         desc = etree.SubElement(xml_item, 'description')
 
-        alt_text = item.get('alt_text') or ''
+        alt_text = item.get('alt_text')
+        if alt_text is None:
+            alt_text = ''
+        else:
+            alt_text = quoteattr(alt_text)
 
-        img_tag = '<img src="%s" title="%s" />'
+        img_tag = '<img src="%s" title=%s />'
         desc.text =  img_tag % (item['image_url'], alt_text)
 
     return etree.tostring(root, 
