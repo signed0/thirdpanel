@@ -10,7 +10,8 @@ AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed,
                           'wondermark': feeds.WondermarkFeed,
                           'dinosaurcomics': feeds.DinosaurComicsFeed,
                           'xkcd': feeds.XkcdFeed,
-                          'dilbert': feeds.DilbertFeed
+                          'dilbert': feeds.DilbertFeed,
+                          'smbc': feeds.SmbcFeed
                           }
 
 ITEM_FIELDS = frozenset(('title', 'link', 'pubDate', 'guid'))

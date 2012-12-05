@@ -149,3 +149,10 @@ class DilbertFeed(ComicFeed):
 
     def _clean_item(self, item):
         return add_description_image(item, has_title=False)
+
+class SmbcFeed(ComicFeed):
+
+    rss_url = "http://feeds.feedburner.com/smbc-comics/PvLb"
+
+    def _clean_item(self, item):
+        return add_description_image(item, has_title=False)
