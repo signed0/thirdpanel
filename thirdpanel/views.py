@@ -29,6 +29,10 @@ def render_feed_as_rss(feed):
 
     channel = etree.SubElement(root, 'channel')
 
+    for key, value in feed.iteritems():
+        if key != 'items':
+            etree.SubElement(channel, key).text = value
+
     for item in feed['items']:
         xml_item = etree.SubElement(channel, 'item')
 
