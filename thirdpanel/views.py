@@ -62,6 +62,11 @@ def render_feed_as_rss(feed):
                           xml_declaration=True, 
                           encoding="UTF-8")
 
+@app.route('/')
+def index():
+    feeds = AVAILABLE_FEED_LOADERS.keys()
+    return render_template('index.jinja2', feeds=feeds)
+
 @app.route('/<comic_name>')
 @app.route('/<comic_name>/')
 def comic_home(comic_name):
