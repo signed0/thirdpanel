@@ -52,12 +52,11 @@ class RssHandler(xml.sax.handler.ContentHandler):
 
     def characters(self, content):
         if self._cur_content is not None:
-            self._cur_content.write(content)
+            self._cur_content.write(content.encode('utf8'))
 
 def parse_rss_feed(feed_content):
-
     handler = RssHandler()
-    xml.sax.parseString(feed_content, handler=handler)
+    xml.sax.parseString(str(feed_content), handler=handler)
 
     result = dict(items=handler.items)
     result.update(handler.channel_tags)
