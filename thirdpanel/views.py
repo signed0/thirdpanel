@@ -17,6 +17,9 @@ AVAILABLE_FEED_LOADERS = {'asofterworld': feeds.ASofterWorldFeed,
 
 ITEM_FIELDS = frozenset(('title', 'link', 'pubDate', 'guid'))
 
+JSON_ITEM_FIELDS = frozenset(('image_url', 'alt_text', 'pubDate', 'title', 
+                              'link', 'guid'))
+
 def fetch_feed_or_404(feed_name):
     feed_loader_class = AVAILABLE_FEED_LOADERS.get(feed_name)
 
@@ -76,6 +79,12 @@ def comic_home(comic_name):
 @app.route('/<comic_name>/feed.json')
 def feed_json(comic_name):
     feed_data = fetch_feed_or_404(comic_name)
+
+    for item in feed_data['items']:
+        for key in item.keys():
+            if key not in JSON_ITEM_FIELDS:
+                del item[key]
+
     return jsonify(feed_data)
 
 @app.route('/<comic_name>/rss.xml')
