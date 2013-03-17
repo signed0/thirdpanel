@@ -26,10 +26,8 @@ pip-log.txt
 .tox
 nosetests.xml
 
-# Translations
-*.mo
+# Heroku
+.env
 
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
+# Virtual Env
+~env
