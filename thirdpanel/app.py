@@ -5,7 +5,7 @@ import logging
 from flask import Flask
 
 app = Flask(__name__)
-app.config['DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['DATABASE_URI'] = os.environ.get('HEROKU_POSTGRESQL_VIOLET_URL')
 
 from views import *
 
