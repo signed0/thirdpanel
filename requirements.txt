@@ -1,7 +1,11 @@
+distribute
 Flask
+flask-sqlalchemy
 Jinja2
 Werkzeug
 beautifulsoup4
 lxml
 requests
 wsgiref
+pytz
+sqlalchemy
