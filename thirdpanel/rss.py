@@ -9,7 +9,7 @@ class RssHandler(xml.sax.handler.ContentHandler):
         self.channel_tags = {}
 
         self._cur_content = None
-        self._cur_item = None        
+        self._cur_item = None
         self._in_root_tag = False
 
     def startElement(self, name, attrs):
@@ -17,7 +17,7 @@ class RssHandler(xml.sax.handler.ContentHandler):
             self._cur_item = dict()
             self.items.append(self._cur_item)
 
-        
+
         if self._cur_item is None:
             # above an item tag
             if name in ROOT_TAGS:
@@ -30,7 +30,7 @@ class RssHandler(xml.sax.handler.ContentHandler):
 
     def endElement(self, name):
         content = None
-        if self._cur_content is not None:            
+        if self._cur_content is not None:
             content = self._cur_content.getvalue()
             self._cur_content.close()
 
@@ -55,6 +55,7 @@ class RssHandler(xml.sax.handler.ContentHandler):
             self._cur_content.write(content.encode('utf8'))
 
 def parse_rss_feed(feed_content):
+    """Parses an XML string and returns a JSON representation"""
     handler = RssHandler()
     xml.sax.parseString(str(feed_content), handler=handler)
 

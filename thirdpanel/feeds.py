@@ -1,158 +1,252 @@
-import requests
+from operator import itemgetter
+import datetime
+from datetime import date
+import hashlib
+import rfc822
+import re
 
+import requests
+import pytz
 from bs4 import BeautifulSoup
 
-from rss import parse_rss_feed
-
-def clean_string(value):
-    '''Returns None instead of empty strings'''
-
-    if value is None:
-        return None
-    value = value.strip()
-    if len(value) == 0:
-        return None
-
-    return value
-
-def clean_int(value):
-    '''Returns an int or None'''
-
-    if value is None:
-        return None
-
-    if value.isdigit():
-        return int(value)
-
-    return None
-
-def extract_images(html, has_title=True):
-    result = []
-
-    soup = BeautifulSoup(html)
-    for image_tag in soup.findAll('img'): 
-        src = clean_string(image_tag.get('src'))
-        if src is None:
-            continue
-
-        title = clean_string(image_tag.get('title'))        
-        if title is None and has_title is True:
-            # filter out images without titles
-            continue
-
-        width = clean_int(image_tag.get('width'))
-        height = clean_int(image_tag.get('height'))        
-
-        if width is None or height is None:
-            width = None
-            height = None
-
-        image = dict(src=src,
-                     title=title,
-                     alt=clean_string(image_tag.get('alt')),
-                     width=width,
-                     height=height
-                    )
-
-        result.append(image)
-
-    return result
+from thirdpanel.rss import parse_rss_feed
+from thirdpanel.util import extract_html_images
 
 class ComicFeed(object):
-
     rss_url = None
+    image_has_alt_text = True
 
-    def fetch_data(self):
+    def fetch_strips_since(self, min_timestamp):
+        for item in self.fetch_current_strips():
+            if min_timestamp and item['publish_date'] < min_timestamp:
+                continue
+            yield item
+
+    def fetch_current_strips(self):
+        """Fetch all current strips and return them ordered by publish_date"""
         r = requests.get(self.rss_url)
         feed = parse_rss_feed(r.content)
 
-        items = []
+        strips = []
         for item in feed['items']:
-            item = self._clean_item(item)
-            if item is not None:
-                items.append(item)
+            if not self._item_is_comic(item):
+                continue
 
-        feed['items'] = items
+            guid = hashlib.sha1(self._item_guid(item)).hexdigest()
 
-        return feed
+            image = self._item_image(item)
+            if image is None:
+                continue
 
-    def _clean_item(self, item):
-        return item
+            strip = dict(publish_date=self._item_publish_date(item),
+                         url=self._item_url(item),
+                         image_url=image['src'],
+                         guid=guid,
+                         title=self._item_title(item),
+                         alt_text=image.get('title'),
+                         number=self._item_number(item)
+                         )
+            strips.append(strip)
 
-def add_description_image(item, has_title=False):        
-    '''Attemps to correct image in the description'''
+        strips.sort(key=itemgetter('publish_date'))
 
-    raw_images = extract_images(item['description'], has_title=has_title)
+        return strips
 
-    if len(raw_images) == 0:
-        return None
-    first_image = raw_images[0]
+    def _item_is_comic(self, item):
+        """Determines whether or not the RSS item is actually a comic
 
-    item['image_url'] = first_image['src']
-    item['alt_text'] = first_image['title']
+        This allows certain items to be ignored such as text only items.
 
-    del item['description']
+        """
+        return True
 
-    return item
+    def _item_title(self, item):
+        return item['title']
+
+    def _item_publish_date(self, item):
+        """Returns the date that the comic strip was published
+
+        Converts a RFC822 string to a UTC datetime.
+
+        """
+        parts = rfc822.parsedate_tz(item['pubDate'])
+        timestamp = rfc822.mktime_tz(parts)
+        return datetime.datetime.fromtimestamp(timestamp, pytz.utc)
+
+    def _item_image(self, item):
+        """Returns the image for the comic strip or None
+
+        The correct image is usually found somewhere in the description HTML.
+        On occasion the description is just the image URL.
+
+        """
+        raw_images = extract_html_images(html=item['description'],
+                                         has_title=self.image_has_alt_text)
+
+        if len(raw_images) == 0:
+            return None
+        return raw_images[0]
+
+    def _item_guid(self, item):
+        return '%s-%s' % (self.name, self._item_number(item))
+
+    def _item_url(self, item):
+        return item['link']
+
+    def _item_number(self, item):
+        raise NotImplementedError()
+
 
 class ASofterWorldFeed(ComicFeed):
-    '''Uses RSSPECT'''
+    # Uses RSSPECT
+    name = 'asofterworld'
+    rss_url = 'http://www.rsspect.com/rss/asw.xml'
 
-    rss_url = "http://www.rsspect.com/rss/asw.xml"
+    def _item_is_comic(self, item):
+        # Exclude I Blame The Sea items
+        return 'iblamethesea' not in item['link']
 
-    def _clean_item(self, item):
-        item = add_description_image(item, has_title=True)
-        if item is None:
-            return None
+    def _item_title(self, item):
+        return None
 
-        # add the commic number to the title
-        comic_id = item['link'].rsplit('=', 1)[-1]
-        item['title'] = "#%s" % comic_id
+    def _item_number(self, item):
+        return int(item['link'].rsplit('=', 1)[-1])
 
-        return item
 
 class WondermarkFeed(ComicFeed):
-    '''Uses Feedburner'''
+    # Uses Feedburner
+    name = 'wondermark'
+    rss_url = 'http://feeds.feedburner.com/wondermark'
 
-    rss_url = "http://feeds.feedburner.com/wondermark"
+    def _item_is_comic(self, item):
+        return ';' in item['title'] and '#' in item['title']
 
-    def _clean_item(self, item):
-        return add_description_image(item, has_title=True)
+    def _item_number(self, item):
+        number, _ = item['title'].split(';', 1)
+        return int(number.lstrip('#'))
+
+    def _item_title(self, item):
+        _, title = item['title'].split(';', 1)
+        return title.strip()
+
+    def _item_url(self, item):
+        return 'http://wondermark.com/%i/' % self._item_number(item)
+
 
 class DinosaurComicsFeed(ComicFeed):
-    '''Uses RSSPECT'''
+    # Uses RSSPECT
+    name = 'dinosaurcomics'
+    rss_url = 'http://www.rsspect.com/rss/qwantz.xml'
 
-    rss_url = "http://www.rsspect.com/rss/qwantz.xml"
-
-    def _clean_item(self, item):
+    def _item_image(self, item):
         soup = BeautifulSoup(item['description'])
         comic = soup.find('img', {'class': 'comic'})
 
-        item['image_url'] = comic['src']
-        item['alt_text'] = comic['title']
+        return dict(src=comic['src'], title=comic['title'])
 
-        del item['description']
+    def _item_number(self, item):
+        # http://www.qwantz.com/index.php?comic=<number>
+        return int(item['link'].rsplit('=', 1)[-1])
 
-        return item
 
 class XkcdFeed(ComicFeed):
+    name = 'xkcd'
+    rss_url = 'http://xkcd.com/rss.xml'
+    image_has_alt_text = False
 
-    rss_url = "http://xkcd.com/rss.xml"
+    def _item_number(self, item):
+        # http://xkcd.com/<number>/
+        return int(item['link'].rstrip('/').split('/')[-1])
 
-    def _clean_item(self, item):
-        return add_description_image(item, has_title=False)
 
 class DilbertFeed(ComicFeed):
-    '''Uses Feedburner'''
+    # Uses Feedburner
+    name = 'dilbert'
+    rss_url = 'http://feed.dilbert.com/dilbert/daily_strip'
+    image_has_alt_text = False
 
-    rss_url = "http://feed.dilbert.com/dilbert/daily_strip"
+    def _item_url(self, item):
+        return item['guid']
 
-    def _clean_item(self, item):
-        return add_description_image(item, has_title=False)
+    def _item_number(self, item):
+        # Use the comic date for the number
+        url_parts = self._item_url(item).rstrip('/').split('/')
+        comic_date = url_parts[-1]
+        return int(comic_date.replace('-', ''))
+
 
 class SmbcFeed(ComicFeed):
+    name = 'smbc'
+    rss_url = 'http://feeds.feedburner.com/smbc-comics/PvLb'
+    image_has_alt_text = False
 
-    rss_url = "http://feeds.feedburner.com/smbc-comics/PvLb"
+    def _item_url(self, item):
+        return item['feedburner:origLink']
 
-    def _clean_item(self, item):
-        return add_description_image(item, has_title=False)
+    def _item_number(self, item):
+        # http://www.smbc-comics.com/index.php?db=comics&id=<number>
+        return int(self._item_url(item).rsplit('=', 1)[-1])
+
+
+class CyanideHappinessFeed(ComicFeed):
+    # Feedburner
+    name = 'cyanide'
+    rss_url = 'http://feeds.feedburner.com/Explosm'
+    image_has_alt_text = False
+
+    def _item_is_comic(self, item):
+        return (item['description'] == 'New Cyanide and Happiness Comic.')
+
+    def _item_image(self, item):
+        url = self._item_url(item)
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+
+        content = soup.find('div', id='maincontent')
+        image_elm = content.find('img', alt='Cyanide and Happiness, a daily webcomic')
+        image_src = image_elm['src']
+        return dict(src=image_src)
+
+    def _item_number(self, item):
+        # http://www.explosm.net/comics/<number>/
+        match = re.search(r'comics/(\d+)', item['guid'])
+        return match.groups()[0]
+
+
+class CtrlAltDeleteFeed(ComicFeed):
+    name = 'ctrlaltdel'
+    rss_url = 'http://cdn.cad-comic.com/rss.xml'
+
+    def _item_title(self, item):
+        return item['title'].split(':', 1)[-1].strip()
+
+    def _item_is_comic(self, item):
+        return item['guid'].startswith('Ctrl+Alt+Del')
+
+    def _item_image(self, item):
+        url = self._item_url(item)
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+
+        content = soup.find('div', id='content')
+        image_elm = content.find('img')
+        image = extract_html_images(str(content))[0]
+        del image['title']
+        return image
+
+    def _item_number(self, item):
+        return int(item['guid'].lstrip('Ctrl+Alt+Del'))
+
+ALL_FEEDS = [ASofterWorldFeed,
+             WondermarkFeed,
+             DinosaurComicsFeed,
+             XkcdFeed,
+             DilbertFeed,
+             SmbcFeed,
+             CyanideHappinessFeed,
+             CtrlAltDeleteFeed]
+
+def get_feed_by_name(feed_name):
+    for feed in ALL_FEEDS:
+        if feed.name == feed_name:
+            return feed()

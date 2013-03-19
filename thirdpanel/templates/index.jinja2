@@ -4,21 +4,47 @@
         <title>3rd Panel</title>
         <link href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css" rel="stylesheet">
         <style>
-        body {
-            background-color: #e9e9e9;
-        }        
+        {% include 'styles.jinja2' %}
+        .comic_list li {
+            display: inline-block;
+        }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>3rd Panel</h1>
+            <div class="row">
+                <h1>Web Comics</h1>
 
-            <ul class="list">
-                {% for feed in feeds|sort %}
-                <li><a href="{{ feed }}">{{ feed }}</a></li>
-                {% endfor %}
-            </ul>
+                <ul class="comic_list">
+                    {% for comic in comics|sort(attribute='title') %}
+                    <li>
+                        {% if not loop.first %} · {% endif %}
+                        <a href="./{{ comic.name }}">{{ comic.title }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
 
+            <div class="row">
+                <h2>Today's Comics</h2>
+            </div>
+
+            {% import 'comic_strip.jinja2' as comic_strip_template %}
+            {% for comic_strip in comic_strips %}
+                <div class="row comic_header">
+                    <h3><a href="{{ comic_strip.url }}">
+                    {{ comic_strip.comic.title }} -
+                    {% if comic_strip.title %}
+                        {{ comic_strip.title }}
+                    {% elif comic_strip.number %}
+                        #{{ comic_strip.number }}
+                    {% endif %}
+                    </a></h3>
+                </div>
+
+                {{ comic_strip_template.comic_image(comic_strip) }}
+                <hr />
+            {% endfor %}
         </div>
     </body>
 </html>

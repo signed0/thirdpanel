@@ -1,0 +1,18 @@
+{% macro comic_image(comic_strip) -%}
+  <div class="row comic_image">
+      <div class="span12">
+          <img src="{{ comic_strip.image_url }}">
+      </div>
+  </div>
+
+  {% if comic_strip.alt_text %}
+      <div class="alt_text_row row">
+          <div class="span8 offset2">
+              <div class="well alt_text">
+                  <span class="text">{{ comic_strip.alt_text }}</span>
+                  <span class="placeholder muted">Alt Text</span>
+              </div>
+          </div>
+      </div>
+  {% endif %}
+{%- endmacro %}
