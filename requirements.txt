@@ -9,3 +9,4 @@ requests
 wsgiref
 pytz
 sqlalchemy
+psycopg2
