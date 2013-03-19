@@ -36,7 +36,8 @@ class ComicFeed(object):
 
             image = self._item_image(item)
             if image is None:
-                continue
+                values = (self.name, self._item_number(item))
+                raise Exception("[%s] Unable to find image for %s" % values)
 
             strip = dict(publish_date=self._item_publish_date(item),
                          url=self._item_url(item),
