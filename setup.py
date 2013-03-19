@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-import os.path
 from setuptools import setup
 
 setup(
     name='Third Panel',
-    version='0.0.1',
+    version='0.1.0',
     packages=['thirdpanel'],
     author='Nathan Villaescusa',
     author_email='nathan@signedzero.com',
