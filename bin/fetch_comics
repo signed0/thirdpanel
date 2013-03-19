@@ -13,7 +13,7 @@ def view_feed(comic_name):
 
     print('Current comic strips for "%s":' % feed.name)
 
-    for strip in feed.fetch_current_strips():
+    for strip in feed.fetch_items():
         print_wrap('[title] %s' % strip['title'])
         print_wrap('[url] %s' % strip['url'])
         print_wrap('[number] %s' % strip['number'])

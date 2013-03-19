@@ -1,4 +1,3 @@
-from operator import itemgetter
 import datetime
 from datetime import date
 import hashlib
@@ -16,30 +15,31 @@ class ComicFeed(object):
     rss_url = None
     image_has_alt_text = True
 
-    def fetch_strips_since(self, min_timestamp):
-        for item in self.fetch_current_strips():
-            if min_timestamp and item['publish_date'] < min_timestamp:
-                continue
-            yield item
-
-    def fetch_current_strips(self):
-        """Fetch all current strips and return them ordered by publish_date"""
+    def _iter_current_items(self, min_publish_date=None, exclude_guids=()):
+        """Iterate over current strips"""
         r = requests.get(self.rss_url)
         feed = parse_rss_feed(r.content)
 
-        strips = []
         for item in feed['items']:
             if not self._item_is_comic(item):
                 continue
 
+            publish_date = self._item_publish_date(item)
+
+            if min_publish_date and publish_date < min_publish_date:
+                continue
+
             guid = hashlib.sha1(self._item_guid(item)).hexdigest()
+
+            if guid in exclude_guids:
+                continue
 
             image = self._item_image(item)
             if image is None:
                 values = (self.name, self._item_number(item))
                 raise Exception("[%s] Unable to find image for %s" % values)
 
-            strip = dict(publish_date=self._item_publish_date(item),
+            strip = dict(publish_date=publish_date,
                          url=self._item_url(item),
                          image_url=image['src'],
                          guid=guid,
@@ -47,11 +47,12 @@ class ComicFeed(object):
                          alt_text=image.get('title'),
                          number=self._item_number(item)
                          )
-            strips.append(strip)
+            yield strip
 
-        strips.sort(key=itemgetter('publish_date'))
-
-        return strips
+    def fetch_items(self, min_publish_date=None, exclude_guids=()):
+        """Fetches the current RSS feed and returns one or more items"""
+        strips = self._iter_current_items(min_publish_date, exclude_guids)
+        return tuple(strips)
 
     def _item_is_comic(self, item):
         """Determines whether or not the RSS item is actually a comic

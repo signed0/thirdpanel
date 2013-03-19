@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import logging
+from operator import itemgetter
+
 from sqlalchemy import func
 import pytz
 
@@ -14,6 +16,13 @@ def _query_comic_last_publish_date():
             .query(ComicStrip.comic_id, func.max(ComicStrip.publish_date)) \
             .group_by(ComicStrip.comic_id)
     return dict((r[0], r[1]) for r in q.all())
+
+def _query_comic_guids_since(comic_id, timestamp):
+    q = db.session \
+            .query(ComicStrip.guid) \
+            .filter(ComicStrip.comic_id == comic_id) \
+            .filter(ComicStrip.publish_date == timestamp)
+    return set(row.guid for row in q.all())
 
 def _comic_last_published(comic_id):
     q = db.session \
@@ -66,11 +75,15 @@ def sync_feed(feed, comic_id):
         msg = "[%s] last updated: %s" % (feed.name, last_publish_date)
         logging.info(msg)
 
-    new_feed_items = feed.fetch_strips_since(last_publish_date)
+    current_guids = _query_comic_guids_since(comic_id, last_publish_date)
+
+    new_strips = feed.fetch_items(min_publish_date=last_publish_date,
+                                  exclude_guids=current_guids)
+    new_strips = sorted(new_strips, key=itemgetter('publish_date'))
 
     new_comic_strips = []
-    for feed_item in new_feed_items:
-        comic_strip = ComicStrip(comic_id=comic_id, **feed_item)
+    for strip_data in new_strips:
+        comic_strip = ComicStrip(comic_id=comic_id, **strip_data)
         new_comic_strips.append(comic_strip)
 
     _add_comic_strips(new_comic_strips)
@@ -93,5 +106,5 @@ def sync_all_feeds():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger("requests").setLevel(logging.WARNING)
+    #logging.getLogger("requests").setLevel(logging.WARNING)
     sync_all_feeds()
