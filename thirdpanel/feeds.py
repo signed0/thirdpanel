@@ -293,6 +293,34 @@ class ToothpasteForDinnerFeed(ComicFeed):
         return dict(src=image_url)
 
 
+class MarriedToTheSeaFeed(ComicFeed):
+    name = 'marriedtothesea'
+    rss_url = 'http://www.marriedtothesea.com/rss/rss.php'
+
+    def _fetch_rss_feed(self):
+        # The server seems to hate it if the user agent is not provided and
+        # it displays a completly different website
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(self.rss_url, headers=headers)
+        return r.text
+
+    def _item_number(self, item):
+        # http://marriedtothesea.com/index.php?x=<number>
+        match = re.search(r'x=(\d+)', item['guid'])
+        return match.groups()[0]
+
+    def _item_image(self, item):
+        url = self._item_url(item)
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(url, headers=headers)
+        soup = BeautifulSoup(r.text)
+
+        content = soup.find('div', id='butts')
+        image_elm = content.find('img')
+        image_src = image_elm['src']
+        return dict(src=image_src)
+
+
 ALL_FEEDS = [ASofterWorldFeed,
              WondermarkFeed,
              DinosaurComicsFeed,
@@ -301,7 +329,8 @@ ALL_FEEDS = [ASofterWorldFeed,
              SmbcFeed,
              CyanideHappinessFeed,
              CtrlAltDeleteFeed,
-             ToothpasteForDinnerFeed]
+             ToothpasteForDinnerFeed,
+             MarriedToTheSeaFeed]
 
 def get_feed_by_name(feed_name):
     for feed in ALL_FEEDS:
