@@ -304,6 +304,12 @@ class MarriedToTheSeaFeed(ComicFeed):
         r = requests.get(self.rss_url, headers=headers)
         return r.text
 
+    def _item_url(self, item):
+        # item['link'] does not contain the correct URL
+        soup = BeautifulSoup(item['description'])
+        link = soup.find('a')
+        return link['href']
+
     def _item_number(self, item):
         # http://marriedtothesea.com/index.php?x=<number>
         match = re.search(r'x=(\d+)', item['guid'])
