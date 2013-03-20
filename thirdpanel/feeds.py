@@ -1,5 +1,4 @@
-import datetime
-from datetime import date
+from datetime import date, datetime
 import hashlib
 import rfc822
 import re
@@ -15,10 +14,15 @@ class ComicFeed(object):
     rss_url = None
     image_has_alt_text = True
 
+    def _fetch_rss_feed(self):
+        """Fetches the RSS XML from the webserver"""
+        r = requests.get(self.rss_url)
+        return r.content
+
     def _iter_current_items(self, min_publish_date=None, exclude_guids=()):
         """Iterate over current strips"""
-        r = requests.get(self.rss_url)
-        feed = parse_rss_feed(r.content)
+        feed_xml = self._fetch_rss_feed()
+        feed = parse_rss_feed(feed_xml)
 
         for item in feed['items']:
             if not self._item_is_comic(item):
@@ -66,14 +70,24 @@ class ComicFeed(object):
         return item['title']
 
     def _item_publish_date(self, item):
-        """Returns the date that the comic strip was published
+        """Returns the UTC date that the comic strip was published
 
         Converts a RFC822 string to a UTC datetime.
 
         """
         parts = rfc822.parsedate_tz(item['pubDate'])
         timestamp = rfc822.mktime_tz(parts)
-        return datetime.datetime.fromtimestamp(timestamp, pytz.utc)
+        return datetime.fromtimestamp(timestamp, pytz.utc)
+
+    def _item_publish_date_tz(self, item):
+        """Returns the date that the comic strip was published.
+
+        The original timezone is preserved.
+
+        """
+        parts = rfc822.parsedate_tz(item['pubDate'])
+        timestamp = rfc822.mktime_tz(parts)
+        return datetime.fromtimestamp(timestamp)
 
     def _item_image(self, item):
         """Returns the image for the comic strip or None
@@ -239,6 +253,46 @@ class CtrlAltDeleteFeed(ComicFeed):
     def _item_number(self, item):
         return int(item['guid'].lstrip('Ctrl+Alt+Del'))
 
+
+class ToothpasteForDinnerFeed(ComicFeed):
+    name = 'toothpastefordinner'
+    rss_url = 'http://toothpastefordinner.com/rss/rss.php'
+
+    def _fetch_rss_feed(self):
+        # The server seems to hate it if the user agent is not provided and
+        # it displays a completly different website
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(self.rss_url, headers=headers)
+        return r.text
+
+    def _item_number(self, item):
+        # http://toothpastefordinner.com/index.php?x=<number>
+        match = re.search(r'x=(\d+)', item['guid'])
+        return match.groups()[0]
+
+    def _item_image(self, item):
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(self._item_url(item), headers=headers)
+        soup = BeautifulSoup(r.text)
+
+        title_guess = self._item_title(item).replace(' ', '-')
+        date_guess = self._item_publish_date_tz(item).date()
+
+        url_regex = r'http://www.toothpastefordinner.com/(\d+)/(.+).gif'
+        url_regex = re.compile(url_regex)
+        for image in soup.find_all('img', {'class': 'comic'}):
+            date_str, title = url_regex.match(image['src']).groups()
+            image_date = datetime.strptime(date_str, '%m%d%y').date()
+
+            if title == title_guess or date_guess == image_date:
+                image_url = image['src']
+                break
+        else:
+            raise Exception("Unable to find feed image.")
+
+        return dict(src=image_url)
+
+
 ALL_FEEDS = [ASofterWorldFeed,
              WondermarkFeed,
              DinosaurComicsFeed,
@@ -246,7 +300,8 @@ ALL_FEEDS = [ASofterWorldFeed,
              DilbertFeed,
              SmbcFeed,
              CyanideHappinessFeed,
-             CtrlAltDeleteFeed]
+             CtrlAltDeleteFeed,
+             ToothpasteForDinnerFeed]
 
 def get_feed_by_name(feed_name):
     for feed in ALL_FEEDS:
