@@ -26,6 +26,6 @@ class ComicStrip(db.Model):
     title = Column(String(200))
     number = Column(Integer)
     guid = Column(String(40))
-    url = Column(String(150))
-    image_url = Column(String(150))
+    url = Column(String(200))
+    image_url = Column(String(200))
     alt_text = Column(String(800))

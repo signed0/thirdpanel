@@ -33,6 +33,7 @@ def extract_html_images(html, has_title=True):
         title = clean_string(image_tag.get('title'))
         if title is None and has_title is True:
             # filter out images without titles
+            # TODO: Sometimes a comic that usually has a title does not have one
             continue
 
         width = clean_int(image_tag.get('width'))
