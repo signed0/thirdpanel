@@ -120,7 +120,10 @@ class ASofterWorldFeed(ComicFeed):
 
     def _item_is_comic(self, item):
         # Exclude I Blame The Sea items
-        return 'iblamethesea' not in item['link']
+        if 'iblamethesea' in item['link']:
+            return False
+            
+        return (item['title'] == A Softer World)
 
     def _item_title(self, item):
         return None
