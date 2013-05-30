@@ -123,7 +123,7 @@ class ASofterWorldFeed(ComicFeed):
         if 'iblamethesea' in item['link']:
             return False
             
-        return (item['title'] == A Softer World)
+        return (item['title'] == "A Softer World")
 
     def _item_title(self, item):
         return None
