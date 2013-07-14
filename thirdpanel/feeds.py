@@ -122,7 +122,7 @@ class ASofterWorldFeed(ComicFeed):
         # Exclude I Blame The Sea items
         if 'iblamethesea' in item['link']:
             return False
-            
+
         return (item['title'] == "A Softer World")
 
     def _item_title(self, item):
@@ -176,22 +176,6 @@ class XkcdFeed(ComicFeed):
     def _item_number(self, item):
         # http://xkcd.com/<number>/
         return int(item['link'].rstrip('/').split('/')[-1])
-
-
-class DilbertFeed(ComicFeed):
-    # Uses Feedburner
-    name = 'dilbert'
-    rss_url = 'http://feed.dilbert.com/dilbert/daily_strip'
-    image_has_alt_text = False
-
-    def _item_url(self, item):
-        return item['guid']
-
-    def _item_number(self, item):
-        # Use the comic date for the number
-        url_parts = self._item_url(item).rstrip('/').split('/')
-        comic_date = url_parts[-1]
-        return int(comic_date.replace('-', ''))
 
 
 class SmbcFeed(ComicFeed):
@@ -334,7 +318,6 @@ ALL_FEEDS = [ASofterWorldFeed,
              WondermarkFeed,
              DinosaurComicsFeed,
              XkcdFeed,
-             DilbertFeed,
              SmbcFeed,
              CyanideHappinessFeed,
              CtrlAltDeleteFeed,
