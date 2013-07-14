@@ -62,7 +62,6 @@ def _add_comic_strips(comic_strips):
 
     comic_names_by_id = _comic_names_by_id()
 
-    values = []
     for comic_strip in comic_strips:
         if comic_strip.guid in existing_guids:
             continue

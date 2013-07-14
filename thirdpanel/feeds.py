@@ -244,13 +244,22 @@ class CtrlAltDeleteFeed(ComicFeed):
 class ToothpasteForDinnerFeed(ComicFeed):
     name = 'toothpastefordinner'
     rss_url = 'http://toothpastefordinner.com/rss/rss.php'
+    image_url_domain = 'toothpastefordinner.com'
 
-    def _fetch_rss_feed(self):
+    def _fetch_url(self, url):
         # The server seems to hate it if the user agent is not provided and
         # it displays a completly different website
         headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(self.rss_url, headers=headers)
-        return r.text
+        return requests.get(url, headers=headers).text
+
+    def _fetch_url_using_cache(self, url):
+        if url not in self.url_cache:
+            self.url_cache[url] = self._fetch_url(url)
+
+        return self.url_cache[url]
+
+    def _fetch_rss_feed(self):
+        return self._fetch_url(self.rss_url)
 
     def _item_number(self, item):
         # http://toothpastefordinner.com/index.php?x=<number>
@@ -258,15 +267,14 @@ class ToothpasteForDinnerFeed(ComicFeed):
         return match.groups()[0]
 
     def _item_image(self, item):
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(self._item_url(item), headers=headers)
-        soup = BeautifulSoup(r.text)
+        content = self._fetch_url_using_cache(self._item_url(item))
+        soup = BeautifulSoup(content)
 
         title_guess = self._item_title(item).replace(' ', '-')
         date_guess = self._item_publish_date_tz(item).date()
 
-        url_regex = r'http://www.toothpastefordinner.com/(\d+)/(.+).gif'
-        url_regex = re.compile(url_regex)
+        url_pattern = r'%s/(\d+)/(.+).gif' % self.image_url_domain
+        url_regex = re.compile(url_pattern)
         for image in soup.find_all('img', {'class': 'comic'}):
             date_str, title = url_regex.match(image['src']).groups()
             image_date = datetime.strptime(date_str, '%m%d%y').date()
@@ -280,38 +288,10 @@ class ToothpasteForDinnerFeed(ComicFeed):
         return dict(src=image_url)
 
 
-class MarriedToTheSeaFeed(ComicFeed):
+class MarriedToTheSeaFeed(ToothpasteForDinnerFeed):
     name = 'marriedtothesea'
     rss_url = 'http://www.marriedtothesea.com/rss/rss.php'
-
-    def _fetch_rss_feed(self):
-        # The server seems to hate it if the user agent is not provided and
-        # it displays a completly different website
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(self.rss_url, headers=headers)
-        return r.text
-
-    def _item_url(self, item):
-        # item['link'] does not contain the correct URL
-        soup = BeautifulSoup(item['description'])
-        link = soup.find('a')
-        return link['href']
-
-    def _item_number(self, item):
-        # http://marriedtothesea.com/index.php?x=<number>
-        match = re.search(r'x=(\d+)', item['guid'])
-        return match.groups()[0]
-
-    def _item_image(self, item):
-        url = self._item_url(item)
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(url, headers=headers)
-        soup = BeautifulSoup(r.text)
-
-        content = soup.find('div', id='butts')
-        image_elm = content.find('img')
-        image_src = image_elm['src']
-        return dict(src=image_src)
+    image_url_domain = 'marriedtothesea.com'
 
 
 ALL_FEEDS = [ASofterWorldFeed,
