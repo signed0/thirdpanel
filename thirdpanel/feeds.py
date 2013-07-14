@@ -244,7 +244,7 @@ class CtrlAltDeleteFeed(ComicFeed):
 class ToothpasteForDinnerFeed(ComicFeed):
     name = 'toothpastefordinner'
     rss_url = 'http://toothpastefordinner.com/rss/rss.php'
-    image_url_domain = 'toothpastefordinner.com'
+    image_url_domain = 'www.toothpastefordinner.com'
 
     def __init__(self):
         self._url_cache = {}
@@ -276,7 +276,7 @@ class ToothpasteForDinnerFeed(ComicFeed):
         title_guess = self._item_title(item).replace(' ', '-')
         date_guess = self._item_publish_date_tz(item).date()
 
-        url_pattern = r'%s/(\d+)/(.+).gif' % self.image_url_domain
+        url_pattern = r'http://%s/(\d+)/(.+).gif' % self.image_url_domain
         url_regex = re.compile(url_pattern)
         for image in soup.find_all('img', {'class': 'comic'}):
             date_str, title = url_regex.match(image['src']).groups()
@@ -294,7 +294,7 @@ class ToothpasteForDinnerFeed(ComicFeed):
 class MarriedToTheSeaFeed(ToothpasteForDinnerFeed):
     name = 'marriedtothesea'
     rss_url = 'http://www.marriedtothesea.com/rss/rss.php'
-    image_url_domain = 'marriedtothesea.com'
+    image_url_domain = 'www.marriedtothesea.com'
 
 
 ALL_FEEDS = [ASofterWorldFeed,
