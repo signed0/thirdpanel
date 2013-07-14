@@ -246,6 +246,9 @@ class ToothpasteForDinnerFeed(ComicFeed):
     rss_url = 'http://toothpastefordinner.com/rss/rss.php'
     image_url_domain = 'toothpastefordinner.com'
 
+    def __init__(self):
+        self._url_cache = {}
+
     def _fetch_url(self, url):
         # The server seems to hate it if the user agent is not provided and
         # it displays a completly different website
@@ -253,10 +256,10 @@ class ToothpasteForDinnerFeed(ComicFeed):
         return requests.get(url, headers=headers).text
 
     def _fetch_url_using_cache(self, url):
-        if url not in self.url_cache:
-            self.url_cache[url] = self._fetch_url(url)
+        if url not in self._url_cache:
+            self._url_cache[url] = self._fetch_url(url)
 
-        return self.url_cache[url]
+        return self._url_cache[url]
 
     def _fetch_rss_feed(self):
         return self._fetch_url(self.rss_url)
