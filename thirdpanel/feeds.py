@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 import hashlib
 import rfc822
 import re
@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 
 from thirdpanel.rss import parse_rss_feed
 from thirdpanel.util import extract_html_images
+
 
 class ComicFeed(object):
     rss_url = None
@@ -232,7 +233,6 @@ class CtrlAltDeleteFeed(ComicFeed):
         soup = BeautifulSoup(r.text)
 
         content = soup.find('div', id='content')
-        image_elm = content.find('img')
         image = extract_html_images(str(content))[0]
         del image['title']
         return image
@@ -323,6 +323,7 @@ ALL_FEEDS = [ASofterWorldFeed,
              CtrlAltDeleteFeed,
              ToothpasteForDinnerFeed,
              MarriedToTheSeaFeed]
+
 
 def get_feed_by_name(feed_name):
     for feed in ALL_FEEDS:
