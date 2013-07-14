@@ -17,12 +17,14 @@ def _query_comic_last_publish_date():
             .group_by(ComicStrip.comic_id)
     return dict((r[0], r[1]) for r in q.all())
 
+
 def _query_comic_guids_since(comic_id, timestamp):
     q = db.session \
             .query(ComicStrip.guid) \
             .filter(ComicStrip.comic_id == comic_id) \
             .filter(ComicStrip.publish_date == timestamp)
     return set(row.guid for row in q.all())
+
 
 def _comic_last_published(comic_id):
     q = db.session \
@@ -36,13 +38,16 @@ def _comic_last_published(comic_id):
 
     return row[0].replace(tzinfo=pytz.UTC)
 
+
 def _comic_ids_by_name():
     q = db.session.query(Comic.id, Comic.name)
     return dict((c.name, c.id) for c in q)
 
+
 def _comic_names_by_id():
     q = db.session.query(Comic.id, Comic.name)
     return dict((c.id, c.name) for c in q)
+
 
 def _add_comic_strips(comic_strips):
     if len(comic_strips) == 0:
@@ -68,6 +73,7 @@ def _add_comic_strips(comic_strips):
         logging.info('[%s] new strip %s, published %s"' % _values)
 
         db.session.add(comic_strip)
+
 
 def sync_feed(feed, comic_id):
     last_publish_date = _comic_last_published(comic_id)
