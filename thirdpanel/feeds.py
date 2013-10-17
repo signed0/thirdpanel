@@ -273,7 +273,9 @@ class ToothpasteForDinnerFeed(ComicFeed):
         content = self._fetch_url_using_cache(self._item_url(item))
         soup = BeautifulSoup(content)
 
-        title_guess = self._item_title(item).replace(' ', '-')
+        title_guess = self._item_title(item)
+        if title_guess is not None:
+            title_guess = title_guess.replace(' ', '-')
         date_guess = self._item_publish_date_tz(item).date()
 
         url_pattern = r'http://%s/(\d+)/(.+).gif' % self.image_url_domain
